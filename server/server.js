@@ -15,6 +15,14 @@ const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const cheerio = require('cheerio');
+const { Anthropic } = require('@anthropic-ai/sdk');
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+});
+// Use native fetch if available, fallback to node-fetch dynamically for ESM
+const fetchClient = typeof fetch !== 'undefined' ? fetch : (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 
 const app = express();
 
@@ -113,6 +121,82 @@ app.delete('/admin/module/:id', requireAdmin, (req, res) => {
   saveModules();
   console.log(`[ADMIN] Module ${id} (${deletedTopic}) deleted`);
   res.json({ success: true });
+});
+
+// POST /admin/generate-module — AI Module Generator
+app.post('/admin/generate-module', requireAdmin, async (req, res) => {
+  const { method, input, moduleId } = req.body;
+
+  if (!moduleId) {
+    return res.status(400).json({ error: 'Module ID is required' });
+  }
+
+  let textToProcess = '';
+
+  try {
+    if (method === 'url') {
+      const response = await fetchClient(input);
+      if (!response.ok) throw new Error('Failed to fetch URL');
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      $('script, style, noscript, nav, footer').remove();
+      textToProcess = $('body').text().replace(/\s+/g, ' ').trim();
+      textToProcess = textToProcess.substring(0, 50000);
+    } else if (method === 'text') {
+      textToProcess = input;
+    } else if (method === 'topic') {
+      textToProcess = `Create a comprehensive lesson module about the topic: ${input}`;
+    } else {
+      return res.status(400).json({ error: 'Invalid generation method' });
+    }
+
+    const prompt = `You are an expert curriculum designer. Based on the following ${method === 'topic' ? 'request' : 'content'}, generate a highly structured educational module. You MUST respond with ONLY valid JSON and no other text or explanation. The JSON must exactly match this exact structure:
+{
+  "id": ${moduleId},
+  "topic": "<topic name>",
+  "concept": "<clear explanation, 3-5 sentences>",
+  "examples": [
+    { "problem": "<problem>", "solution": "<step by step solution>" },
+    { "problem": "<problem>", "solution": "<step by step solution>" }
+  ],
+  "practice": [
+    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" },
+    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" },
+    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" }
+  ]
+}
+
+Content/Request:
+${textToProcess}`;
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 2000,
+    });
+
+    const aiResponseText = message.content[0].text;
+    const cleanedText = aiResponseText.replace(/^```(?:json)?|```$/gm, '').trim();
+
+    const generatedModule = JSON.parse(cleanedText);
+
+    // Validate required fields
+    if (!generatedModule.id || !generatedModule.topic || !generatedModule.concept ||
+      !generatedModule.examples || !generatedModule.practice) {
+      throw new Error('Generated JSON is missing required fields');
+    }
+
+    generatedModule.id = parseInt(moduleId, 10); // Enforce ID
+
+    console.log(`[ADMIN] AI generated Module ${generatedModule.id} preview ready: ${generatedModule.topic}`);
+    res.json({ success: true, module: generatedModule });
+
+  } catch (error) {
+    console.error('[ADMIN] AI Generation Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate module' });
+  }
 });
 
 // ── TOKEN GENERATOR ────────────────────────────────
@@ -229,6 +313,7 @@ app.get('/', (req, res) => {
       'POST /admin/module',
       'PUT  /admin/module/:id',
       'DELETE /admin/module/:id',
+      'POST /admin/generate-module',
     ],
   });
 });
@@ -250,6 +335,7 @@ app.listen(PORT, () => {
   console.log('    POST   /admin/module          ← add module');
   console.log('    PUT    /admin/module/:id      ← update module');
   console.log('    DELETE /admin/module/:id      ← delete module');
+  console.log('    POST   /admin/generate-module ← AI module generator');
   console.log('  Waiting for requests...');
   console.log('════════════════════════════════════════');
 });

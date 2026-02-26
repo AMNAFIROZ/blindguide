@@ -183,6 +183,60 @@
                 <div id="moduleList">Loading modules...</div>
             </div>
 
+            <!-- AI Generator Card -->
+            <div class="card" id="aiCard">
+                <h2>AI Module Generator</h2>
+                <div
+                    style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid #1e2d45; padding-bottom:12px;">
+                    <button class="btn btn-sm" id="tab-url" style="background:#00d4ff; color:#0a0e1a;"
+                        onclick="switchTab('url')">From URL</button>
+                    <button class="btn btn-sm" id="tab-text" style="background:#1e2d45; color:#e2e8f0;"
+                        onclick="switchTab('text')">From Text</button>
+                    <button class="btn btn-sm" id="tab-topic" style="background:#1e2d45; color:#e2e8f0;"
+                        onclick="switchTab('topic')">From Topic</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Module ID (Number)</label>
+                    <input type="number" id="aiModId" placeholder="e.g. 26">
+                </div>
+
+                <!-- URL Input -->
+                <div id="ai-url-group" class="form-group ai-input-group">
+                    <label>Source URL</label>
+                    <input type="text" id="aiUrl" placeholder="https://en.wikipedia.org/wiki/Fraction">
+                </div>
+
+                <!-- Text Input -->
+                <div id="ai-text-group" class="form-group ai-input-group" style="display:none;">
+                    <label>Raw Source Text</label>
+                    <textarea id="aiText" placeholder="Paste textbook text, notes, or article here..."></textarea>
+                </div>
+
+                <!-- Topic Input -->
+                <div id="ai-topic-group" class="form-group ai-input-group" style="display:none;">
+                    <label>Generation Topic</label>
+                    <input type="text" id="aiTopic" placeholder="e.g. Introduction to Multiplication for 3rd Graders">
+                </div>
+
+                <div style="display:flex; gap:12px; align-items:center; margin-bottom: 16px;">
+                    <button class="btn" id="generateBtn" onclick="generateModule()">Generate Module (AI)</button>
+                    <span id="aiLoading" style="display:none; color:#00d4ff; font-family:monospace; font-size:14px;">⏳
+                        Claude is thinking...</span>
+                </div>
+
+                <div id="aiPreview" style="display:none; border-top:1px dashed #1e2d45; padding-top:16px;">
+                    <label>Generated Output Preview</label>
+                    <pre id="aiPreviewContent"
+                        style="background:#0a0e1a; padding:12px; border-radius:4px; font-size:13px; color:#6ee7b7; overflow-x:auto; margin-bottom:16px; min-height:100px; max-height:400px;"></pre>
+                    <div style="display:flex; gap:12px;">
+                        <button class="btn" onclick="saveGeneratedModule()">Save to Server</button>
+                        <button class="btn" style="background:#1e2d45; color:#e2e8f0;"
+                            onclick="editGeneratedModule()">Edit Before Saving</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card" id="formCard">
                 <h2 id="formTitle">Add New Module</h2>
                 <p style="color:#94a3b8; font-size:12px; margin-bottom:16px;">Note: Examples and Practice questions are
@@ -386,6 +440,110 @@
 
         // Reset form initially
         resetForm();
+
+        // ════════════════════════════════════════════════════
+        // AI GENERATION LOGIC
+        // ════════════════════════════════════════════════════
+        let currentMethod = 'url';
+        let generatedJson = null;
+
+        function switchTab(method) {
+            currentMethod = method;
+            document.querySelectorAll('.ai-input-group').forEach(el => el.style.display = 'none');
+            document.getElementById(`ai-${method}-group`).style.display = 'block';
+
+            ['url', 'text', 'topic'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                if (m === method) {
+                    btn.style.background = '#00d4ff';
+                    btn.style.color = '#0a0e1a';
+                } else {
+                    btn.style.background = '#1e2d45';
+                    btn.style.color = '#e2e8f0';
+                }
+            });
+        }
+
+        async function generateModule() {
+            const moduleId = parseInt(document.getElementById('aiModId').value);
+            if (isNaN(moduleId)) return alert('Please provide a valid Module ID');
+
+            let input = '';
+            if (currentMethod === 'url') input = document.getElementById('aiUrl').value;
+            if (currentMethod === 'text') input = document.getElementById('aiText').value;
+            if (currentMethod === 'topic') input = document.getElementById('aiTopic').value;
+
+            if (!input) return alert('Please provide input for the selected method');
+
+            document.getElementById('aiLoading').style.display = 'inline-block';
+            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('aiPreview').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+
+            try {
+                const res = await fetch(`${SERVER_URL}/admin/generate-module`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
+                    body: JSON.stringify({ method: currentMethod, input, moduleId })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    generatedJson = data.module;
+                    document.getElementById('aiPreviewContent').textContent = JSON.stringify(generatedJson, null, 2);
+                    document.getElementById('aiPreview').style.display = 'block';
+                    showSuccess(`AI Module generation complete. Please review and save.`);
+                } else {
+                    alert('Generation failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Server error during generation');
+            } finally {
+                document.getElementById('aiLoading').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        async function saveGeneratedModule() {
+            if (!generatedJson) return;
+            try {
+                const res = await fetch(`${SERVER_URL}/admin/module`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
+                    body: JSON.stringify({ module: generatedJson })
+                });
+                if (res.ok) {
+                    showSuccess(`Module ${generatedJson.id} saved successfully!`);
+                    document.getElementById('aiPreview').style.display = 'none';
+                    generatedJson = null;
+                    document.getElementById('aiModId').value = '';
+                    document.getElementById('aiUrl').value = '';
+                    document.getElementById('aiText').value = '';
+                    document.getElementById('aiTopic').value = '';
+                    loadModules();
+                } else {
+                    alert('Save failed.');
+                }
+            } catch (e) {
+                alert('Server error saving module.');
+            }
+        }
+
+        function editGeneratedModule() {
+            if (!generatedJson) return;
+            document.getElementById('formTitle').textContent = `Add / Edit AI Module ${generatedJson.id}`;
+            document.getElementById('modId').value = generatedJson.id;
+            document.getElementById('modId').disabled = false;
+            document.getElementById('modTopic').value = generatedJson.topic;
+            document.getElementById('modConcept').value = generatedJson.concept;
+            document.getElementById('modExamples').value = JSON.stringify(generatedJson.examples, null, 2);
+            document.getElementById('modPractice').value = JSON.stringify(generatedJson.practice, null, 2);
+            document.getElementById('cancelBtn').style.display = 'block';
+
+            document.getElementById('aiPreview').style.display = 'none';
+            window.scrollTo({ top: document.getElementById('formCard').offsetTop, behavior: 'smooth' });
+        }
     </script>
 </body>
 
