@@ -119,6 +119,41 @@
       color: #fca5a5;
     }
 
+    /* ── LOGIN SCREEN ── */
+    #loginScreen {
+      text-align: center;
+      padding-top: 60px;
+    }
+
+    #loginScreen h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .anon-box {
+      background: #111827;
+      border: 1px dashed #4b6080;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 30px;
+      display: inline-block;
+    }
+
+    .anon-label {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .anon-id {
+      font-size: 28px;
+      font-weight: bold;
+      color: #00d4ff;
+      font-family: monospace;
+    }
+
     /* ── PROCESSING SCREEN ── */
     #processingScreen {
       padding: 8px 0;
@@ -576,8 +611,31 @@
     <h1>BlindGuide</h1>
     <p class="subtitle">// privacy-first adaptive learning · zero knowledge protocol</p>
 
+    <!-- ── SCREEN 0: LOGIN ── -->
+    <div id="loginScreen" class="screen active">
+      <h2>Privacy-First Learning Protocol</h2>
+      <p style="color: #94a3b8; margin-bottom: 40px; line-height: 1.6;">
+        BlindGuide uses mathematically proven Zero-Knowledge protocols.<br>
+        We never ask for your name, email, or identity.<br>
+        Your local device generates a completely anonymous ID.
+      </p>
+
+      <div class="anon-box">
+        <div class="anon-label">Your Anonymous Device ID</div>
+        <div class="anon-id" id="displayAnonId">u_----</div>
+      </div>
+
+      <p style="color: #6ee7b7; font-size: 13px; font-family: monospace; margin-bottom: 30px;">
+        ✓ ID will be SHA-256 hashed locally before transmission<br>
+        ✓ Server remains 100% blind to your real identity
+      </p>
+
+      <button class="btn" onclick="startSecureSession()" style="padding: 16px 40px; font-size: 16px;">Initialize Secure
+        Session</button>
+    </div>
+
     <!-- ── SCREEN 1: QUIZ ── -->
-    <div id="quizScreen" class="screen active">
+    <div id="quizScreen" class="screen">
       <div class="progress-bar">
         <div class="progress-fill" id="progressFill" style="width:0%"></div>
       </div>

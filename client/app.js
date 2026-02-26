@@ -133,7 +133,9 @@ async function downloadModule(id) {
   const key = LS_PREFIX + id;
 
   try {
-    const res = await fetch(`${MODULE_SERVER_URL}/${id}`);
+    const res = await fetch(`${MODULE_SERVER_URL}/${id}`, {
+      headers: { 'X-Anon-User': hashedAnonId }
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const module = await res.json();
     // Persist to localStorage for offline use

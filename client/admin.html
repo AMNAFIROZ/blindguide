@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BlindGuide Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #0a0e1a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .card {
+            background: #111827;
+            border: 1px solid #1e2d45;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #1e2d45;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: #0a0e1a;
+            border: 1px solid #1e2d45;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .btn {
+            background: #00d4ff;
+            color: #0a0e1a;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #00b3d6;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .module-item {
+            background: #0a0e1a;
+            padding: 16px;
+            border-radius: 4px;
+            border-left: 3px solid #00d4ff;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-info {
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .module-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        #errorMsg {
+            color: #ef4444;
+            margin-top: 10px;
+            display: none;
+            font-size: 14px;
+        }
+
+        #successMsg {
+            color: #10b981;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1><span style="color:#94a3b8">BlindGuide / </span>Admin Dashboard</h1>
+
+        <!-- LOGIN SCREEN -->
+        <div id="loginScreen" class="screen active">
+            <div class="card" style="max-width: 400px; margin: 60px auto;">
+                <h2>Admin Authentication</h2>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPassword" placeholder="Enter admin password">
+                </div>
+                <button class="btn" style="width:100%" onclick="login()">Login</button>
+                <div id="errorMsg"></div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div id="dashboardScreen" class="screen">
+            <div id="successMsg">Action completed successfully.</div>
+
+            <!-- Module list -->
+            <div class="card">
+                <h2>Existing Modules</h2>
+                <div id="moduleList">Loading modules...</div>
+            </div>
+
+            <div class="card" id="formCard">
+                <h2 id="formTitle">Add New Module</h2>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:16px;">Note: Examples and Practice questions are
+                    stored as JSON arrays.</p>
+                <div class="form-group">
+                    <label>Module ID (Number)</label>
+                    <input type="number" id="modId" placeholder="e.g. 25">
+                </div>
+                <div class="form-group">
+                    <label>Topic Title</label>
+                    <input type="text" id="modTopic" placeholder="e.g. Fractions Part 2">
+                </div>
+                <div class="form-group">
+                    <label>Concept Text</label>
+                    <textarea id="modConcept" placeholder="Write lesson concept explanation..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Examples (JSON Array)</label>
+                    <textarea id="modExamples" placeholder='[{"problem":"1+1=?","solution":"2"}]'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Practice Questions (JSON Array)</label>
+                    <textarea id="modPractice"
+                        placeholder='[{"question":"2+2=?","answer":"4","hint":"Double it"}]'></textarea>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn" id="saveBtn" onclick="saveModule()">Save Module</button>
+                    <button class="btn btn-danger" style="display:none;" id="cancelBtn" onclick="resetForm()">Cancel
+                        Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://blindguide-server.onrender.com';
+        let adminToken = '';
+
+        // Switch screens
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        // SHA256 Helper
+        async function hashPassword(pwd) {
+            const data = new TextEncoder().encode(pwd);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Login
+        async function login() {
+            const pwd = document.getElementById('adminPassword').value;
+            if (!pwd) return;
+
+            // Hash password locally before sending
+            const hash = await hashPassword(pwd);
+
+            try {
+                const res = await fetch(`${SERVER_URL}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ passwordHash: hash })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    adminToken = data.token;
+                    showScreen('dashboardScreen');
+                    loadModules();
+                } else {
+                    const err = document.getElementById('errorMsg');
+                    err.textContent = data.error || 'Login failed';
+                    err.style.display = 'block';
+                }
+            } catch (e) {
+                alert('Server unreachable');
+            }
+        }
+
+        // Load Modules
+        async function loadModules() {
+            const res = await fetch(`${SERVER_URL}/modules/manifest`);
+            const modules = await res.json();
+
+            const list = document.getElementById('moduleList');
+            if (modules.length === 0) {
+                list.innerHTML = '<p style="color:#94a3b8">No modules found.</p>';
+                return;
+            }
+
+            list.innerHTML = modules.map(m => `
+        <div class="module-item">
+          <div class="module-info">
+            <span style="color:#00d4ff">ID: ${m.id}</span> — <strong>${m.topic}</strong>
+          </div>
+          <div class="module-actions">
+            <button class="btn btn-sm" onclick="editModule(${m.id})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteModule(${m.id})">Delete</button>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        // Delete
+        async function deleteModule(id) {
+            if (!confirm(`Delete module ${id}?`)) return;
+
+            const res = await fetch(`${SERVER_URL}/admin/module/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': adminToken }
+            });
+
+            if (res.ok) {
+                showSuccess(`Module ${id} deleted.`);
+                loadModules();
+            } else {
+                alert('Delete failed. Ensure server is running or token is valid.');
+            }
+        }
+
+        // Edit (Fetch details and load to form)
+        async function editModule(id) {
+            const res = await fetch(`${SERVER_URL}/module/${id}`);
+            if (res.ok) {
+                const m = await res.json();
+                document.getElementById('formTitle').textContent = `Edit Module ${m.id}`;
+                document.getElementById('modId').value = m.id;
+                document.getElementById('modId').disabled = true; // prevent changing ID
+                document.getElementById('modTopic').value = m.topic;
+                document.getElementById('modConcept').value = m.concept;
+                document.getElementById('modExamples').value = JSON.stringify(m.examples, null, 2);
+                document.getElementById('modPractice').value = JSON.stringify(m.practice, null, 2);
+                document.getElementById('cancelBtn').style.display = 'block';
+
+                window.scrollTo({ top: document.getElementById('formCard').offsetTop, behavior: 'smooth' });
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('formTitle').textContent = 'Add New Module';
+            document.getElementById('modId').value = '';
+            document.getElementById('modId').disabled = false;
+            document.getElementById('modTopic').value = '';
+            document.getElementById('modConcept').value = '';
+            document.getElementById('modExamples').value = '';
+            document.getElementById('modPractice').value = '';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // Save (Add or Update)
+        async function saveModule() {
+            const id = parseInt(document.getElementById('modId').value);
+            if (isNaN(id)) return alert('Invalid ID');
+
+            let examples, practice;
+            try {
+                examples = JSON.parse(document.getElementById('modExamples').value || '[]');
+                practice = JSON.parse(document.getElementById('modPractice').value || '[]');
+            } catch (e) {
+                return alert('Examples and Practice must be valid JSON matching the format.');
+            }
+
+            const module = {
+                id,
+                topic: document.getElementById('modTopic').value,
+                concept: document.getElementById('modConcept').value,
+                examples,
+                practice
+            };
+
+            const isUpdate = document.getElementById('modId').disabled;
+            const method = isUpdate ? 'PUT' : 'POST';
+            const url = isUpdate ? `${SERVER_URL}/admin/module/${id}` : `${SERVER_URL}/admin/module`;
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': adminToken
+                },
+                body: JSON.stringify({ module })
+            });
+
+            if (res.ok) {
+                showSuccess(isUpdate ? `Module ${id} updated.` : `Module ${id} added.`);
+                resetForm();
+                loadModules();
+            } else {
+                alert('Save failed.');
+            }
+        }
+
+        // Reset form initially
+        resetForm();
+    </script>
+</body>
+
+</html>
