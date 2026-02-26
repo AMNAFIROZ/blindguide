@@ -1,9 +1,13 @@
 // ════════════════════════════════════════════════════
 // BLINDGUIDE — server.js  (Real Modules Edition)
 // Endpoints:
-//   POST /bundle         ← zero-knowledge 12-byte request
-//   GET  /module/:id     ← download a single rich module
-//   GET  /modules/manifest ← list of all modules (id + topic)
+//   POST /bundle              ← zero-knowledge 12-byte request
+//   GET  /module/:id          ← download a single rich module
+//   GET  /modules/manifest    ← list of all modules (id + topic)
+//   POST /admin/login         ← admin authentication
+//   POST /admin/module        ← add new module
+//   PUT  /admin/module/:id    ← update existing module
+//   DELETE /admin/module/:id  ← delete module
 // ════════════════════════════════════════════════════
 
 const express = require('express');
@@ -13,10 +17,17 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+
+// ── CORS — allow all methods including PUT and DELETE ──
 app.use(cors({
   origin: '*',
-  methods: ['POST', 'GET'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key'],
 }));
+
+// Handle preflight OPTIONS requests for all routes
+app.options('*', cors());
+
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
 
@@ -27,6 +38,7 @@ const MODULES_FILE = path.join(__dirname, 'modules.json');
 let MODULE_STORE = {};
 try {
   MODULE_STORE = JSON.parse(fs.readFileSync(MODULES_FILE, 'utf-8'));
+  console.log(`Loaded ${Object.keys(MODULE_STORE).length} modules from modules.json`);
 } catch (err) {
   console.log('No modules.json found, starting empty.');
 }
@@ -36,7 +48,7 @@ function saveModules() {
 }
 
 // ── ADMIN AUTHENTICATION ───────────────────────────
-// EXPECTED SHA-256 HASH for admin password "admin123"
+// SHA-256 hash of "admin123"
 const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 let currentAdminToken = null;
 
@@ -48,37 +60,58 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ══════════════════════════════════════════════════
+// ADMIN ROUTES
+// ══════════════════════════════════════════════════
+
+// POST /admin/login
 app.post('/admin/login', (req, res) => {
   const { passwordHash } = req.body;
   if (passwordHash === ADMIN_PASSWORD_HASH) {
     currentAdminToken = crypto.randomBytes(32).toString('hex');
+    console.log('[ADMIN] Login successful');
     res.json({ token: currentAdminToken });
   } else {
+    console.log('[ADMIN] Login failed — wrong password');
     res.status(401).json({ error: 'Invalid password' });
   }
 });
 
+// POST /admin/module — Add a new module
 app.post('/admin/module', requireAdmin, (req, res) => {
   const { module } = req.body;
-  if (!module || !module.id) return res.status(400).json({ error: 'Invalid module' });
+  if (!module || !module.id) {
+    return res.status(400).json({ error: 'Invalid module — id is required' });
+  }
   MODULE_STORE[module.id] = module;
   saveModules();
+  console.log(`[ADMIN] Module ${module.id} added: ${module.topic}`);
   res.json({ success: true, module });
 });
 
+// PUT /admin/module/:id — Update an existing module
 app.put('/admin/module/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id, 10);
-  if (!MODULE_STORE[id]) return res.status(404).json({ error: 'Not found' });
-  MODULE_STORE[id] = { ...MODULE_STORE[id], ...req.body.module, id };
+  if (!MODULE_STORE[id]) {
+    return res.status(404).json({ error: `Module ${id} not found` });
+  }
+  const updatedModule = { ...MODULE_STORE[id], ...req.body.module, id };
+  MODULE_STORE[id] = updatedModule;
   saveModules();
+  console.log(`[ADMIN] Module ${id} updated`);
   res.json({ success: true, module: MODULE_STORE[id] });
 });
 
+// DELETE /admin/module/:id — Delete a module
 app.delete('/admin/module/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id, 10);
-  if (!MODULE_STORE[id]) return res.status(404).json({ error: 'Not found' });
+  if (!MODULE_STORE[id]) {
+    return res.status(404).json({ error: `Module ${id} not found` });
+  }
+  const deletedTopic = MODULE_STORE[id].topic;
   delete MODULE_STORE[id];
   saveModules();
+  console.log(`[ADMIN] Module ${id} (${deletedTopic}) deleted`);
   res.json({ success: true });
 });
 
@@ -129,7 +162,6 @@ app.post('/bundle', (req, res) => {
   for (const token of receivedTokens) {
     for (const moduleId of Object.keys(MODULE_STORE)) {
       if (generateToken(moduleId, today) === token) {
-        // Return lightweight bundle summary (not the full rich content)
         const m = MODULE_STORE[moduleId];
         foundModules.push({ id: m.id, topic: m.topic });
         break;
@@ -163,7 +195,6 @@ app.get('/module/:id', (req, res) => {
     return res.status(404).json({ error: `Module ${id} not found` });
   }
 
-  // Set cache headers — modules are static, cache for 24h in browser/SW
   res.set('Cache-Control', 'public, max-age=86400');
   logRequest('MODULE', `GET /module/${id} — ${module.topic}`);
   res.json(module);
@@ -190,7 +221,15 @@ app.get('/', (req, res) => {
     status: 'running',
     message: 'BlindGuide — zero knowledge mode active',
     modulesLoaded: Object.keys(MODULE_STORE).length,
-    endpoints: ['POST /bundle', 'GET /module/:id', 'GET /modules/manifest'],
+    endpoints: [
+      'POST /bundle',
+      'GET  /module/:id',
+      'GET  /modules/manifest',
+      'POST /admin/login',
+      'POST /admin/module',
+      'PUT  /admin/module/:id',
+      'DELETE /admin/module/:id',
+    ],
   });
 });
 
@@ -204,9 +243,13 @@ app.listen(PORT, () => {
   console.log(`  http://localhost:${PORT}`);
   console.log(`  Modules loaded: ${Object.keys(MODULE_STORE).length}`);
   console.log('  Endpoints:');
-  console.log('    POST /bundle          ← ZK 12-byte request');
-  console.log('    GET  /module/:id      ← rich module download');
-  console.log('    GET  /modules/manifest ← module index');
+  console.log('    POST   /bundle               ← ZK 12-byte request');
+  console.log('    GET    /module/:id            ← rich module download');
+  console.log('    GET    /modules/manifest      ← module index');
+  console.log('    POST   /admin/login           ← admin auth');
+  console.log('    POST   /admin/module          ← add module');
+  console.log('    PUT    /admin/module/:id      ← update module');
+  console.log('    DELETE /admin/module/:id      ← delete module');
   console.log('  Waiting for requests...');
   console.log('════════════════════════════════════════');
 });
