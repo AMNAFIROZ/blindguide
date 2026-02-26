@@ -625,8 +625,12 @@ function restartQuiz() {
 }
 
 // ════════════════════════════════════════════════════
-// START — Show Login Screen First
+// START — Persistent Anonymous ID
 // ════════════════════════════════════════════════════
-rawAnonId = 'u_' + Math.random().toString(36).substring(2, 7);
+rawAnonId = localStorage.getItem('bg_anon_id');
+if (!rawAnonId) {
+  rawAnonId = 'u_' + Math.random().toString(36).substring(2, 7);
+  localStorage.setItem('bg_anon_id', rawAnonId);
+}
 document.getElementById('displayAnonId').textContent = rawAnonId;
 showScreen('loginScreen');
