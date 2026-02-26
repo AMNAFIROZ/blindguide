@@ -7,11 +7,14 @@
 // ════════════════════════════════════════════════════
 
 const express = require('express');
-const cors    = require('cors');
-const crypto  = require('crypto');
+const cors = require('cors');
+const crypto = require('crypto');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['POST', 'GET'],
+}));
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
 
@@ -249,7 +252,8 @@ app.get('/', (req, res) => {
 // ══════════════════════════════════════════════════
 // START
 // ══════════════════════════════════════════════════
-app.listen(3000, () => {
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
   console.log('════════════════════════════════════════');
   console.log('  🔒 BlindGuide Server — Zero Knowledge');
   console.log('  http://localhost:3000');
