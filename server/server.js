@@ -33,8 +33,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key'],
 }));
 
-// Handle preflight OPTIONS requests for all routes
-app.options('/(.*)', cors());
 
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
