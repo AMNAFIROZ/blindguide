@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════
-// BLINDGUIDE — server.js  (Real Modules Edition)
+// BLINDGUIDE — server.js  (Gemini Edition)
 // Endpoints:
 //   POST /bundle              ← zero-knowledge 12-byte request
 //   GET  /module/:id          ← download a single rich module
@@ -8,6 +8,7 @@
 //   POST /admin/module        ← add new module
 //   PUT  /admin/module/:id    ← update existing module
 //   DELETE /admin/module/:id  ← delete module
+//   POST /admin/generate-module ← AI module generator (Gemini)
 // ════════════════════════════════════════════════════
 
 const express = require('express');
@@ -17,20 +18,15 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
-const { Anthropic } = require('@anthropic-ai/sdk');
-
-// Use native fetch if available, fallback to node-fetch dynamically for ESM
-const fetchClient = typeof fetch !== 'undefined' ? fetch : (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 
 const app = express();
 
-// ── CORS — allow all methods including PUT and DELETE ──
+// ── CORS ──
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Key'],
 }));
-
 
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
@@ -52,7 +48,6 @@ function saveModules() {
 }
 
 // ── ADMIN AUTHENTICATION ───────────────────────────
-// SHA-256 hash of "admin123"
 const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 let currentAdminToken = null;
 
@@ -62,6 +57,38 @@ function requireAdmin(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
+}
+
+// ── GEMINI API CALL ────────────────────────────────
+async function callGemini(prompt) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is not set on this server.');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2000,
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} ${errText}`);
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty response from Gemini');
+  return text;
 }
 
 // ══════════════════════════════════════════════════
@@ -119,87 +146,90 @@ app.delete('/admin/module/:id', requireAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// POST /admin/generate-module — AI Module Generator
+// POST /admin/generate-module — AI Module Generator using Gemini
 app.post('/admin/generate-module', requireAdmin, async (req, res) => {
   const { method, input, moduleId } = req.body;
 
-  if (!moduleId) {
-    return res.status(400).json({ error: 'Module ID is required' });
-  }
+  if (!moduleId) return res.status(400).json({ error: 'Module ID is required' });
+  if (!input) return res.status(400).json({ error: 'Input is required' });
 
   let textToProcess = '';
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY environment variable is missing on this server.' });
-  }
-
-  const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-
   try {
+    // ── Step 1: Get raw content ──
     if (method === 'url') {
-      const response = await fetchClient(input);
-      if (!response.ok) throw new Error('Failed to fetch URL');
+      const response = await fetch(input);
+      if (!response.ok) throw new Error(`Failed to fetch URL: ${response.status}`);
       const html = await response.text();
       const $ = cheerio.load(html);
-      $('script, style, noscript, nav, footer').remove();
-      textToProcess = $('body').text().replace(/\s+/g, ' ').trim();
-      textToProcess = textToProcess.substring(0, 50000);
+      $('script, style, noscript, nav, footer, header').remove();
+      textToProcess = $('body').text().replace(/\s+/g, ' ').trim().substring(0, 15000);
+      if (!textToProcess) throw new Error('Could not extract text from URL');
+
     } else if (method === 'text') {
-      textToProcess = input;
+      textToProcess = input.substring(0, 15000);
+
     } else if (method === 'topic') {
-      textToProcess = `Create a comprehensive lesson module about the topic: ${input}`;
+      textToProcess = `Generate a complete educational lesson about: ${input}`;
+
     } else {
-      return res.status(400).json({ error: 'Invalid generation method' });
+      return res.status(400).json({ error: 'Invalid method — use url, text, or topic' });
     }
 
-    const prompt = `You are an expert curriculum designer. Based on the following ${method === 'topic' ? 'request' : 'content'}, generate a highly structured educational module. You MUST respond with ONLY valid JSON and no other text or explanation. The JSON must exactly match this exact structure:
+    // ── Step 2: Build prompt ──
+    const prompt = `You are an expert curriculum designer for a math learning app.
+
+Based on the following ${method === 'topic' ? 'topic request' : 'content'}, create a structured educational module.
+
+CRITICAL: Respond with ONLY valid JSON. No markdown, no backticks, no explanation. Just raw JSON.
+
+The JSON must follow this exact structure:
 {
-  "id": ${moduleId},
-  "topic": "<topic name>",
-  "concept": "<clear explanation, 3-5 sentences>",
+  "id": ${parseInt(moduleId, 10)},
+  "topic": "<short descriptive topic name>",
+  "concept": "<clear explanation in 3-5 sentences suitable for students>",
   "examples": [
-    { "problem": "<problem>", "solution": "<step by step solution>" },
-    { "problem": "<problem>", "solution": "<step by step solution>" }
+    { "problem": "<a worked example problem>", "solution": "<step by step solution>" },
+    { "problem": "<another worked example>", "solution": "<step by step solution>" }
   ],
   "practice": [
-    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" },
-    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" },
-    { "question": "<question>", "answer": "<answer>", "hint": "<hint>" }
+    { "question": "<practice question 1>", "answer": "<correct answer>", "hint": "<helpful hint>" },
+    { "question": "<practice question 2>", "answer": "<correct answer>", "hint": "<helpful hint>" },
+    { "question": "<practice question 3>", "answer": "<correct answer>", "hint": "<helpful hint>" }
   ]
 }
 
 Content/Request:
 ${textToProcess}`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 2000,
-    });
+    // ── Step 3: Call Gemini ──
+    console.log(`[ADMIN] Calling Gemini for module ${moduleId} via method: ${method}`);
+    const aiText = await callGemini(prompt);
 
-    const aiResponseText = message.content[0].text;
-    const cleanedText = aiResponseText.replace(/^```(?:json)?|```$/gm, '').trim();
+    // ── Step 4: Clean and parse response ──
+    const cleaned = aiText.replace(/^```(?:json)?|```$/gm, '').trim();
+    const generatedModule = JSON.parse(cleaned);
 
-    const generatedModule = JSON.parse(cleanedText);
-
-    // Validate required fields
-    if (!generatedModule.id || !generatedModule.topic || !generatedModule.concept ||
-      !generatedModule.examples || !generatedModule.practice) {
-      throw new Error('Generated JSON is missing required fields');
+    // ── Step 5: Validate fields ──
+    const required = ['id', 'topic', 'concept', 'examples', 'practice'];
+    for (const field of required) {
+      if (!generatedModule[field]) throw new Error(`Missing required field: ${field}`);
+    }
+    if (!Array.isArray(generatedModule.examples) || generatedModule.examples.length === 0) {
+      throw new Error('examples must be a non-empty array');
+    }
+    if (!Array.isArray(generatedModule.practice) || generatedModule.practice.length === 0) {
+      throw new Error('practice must be a non-empty array');
     }
 
-    generatedModule.id = parseInt(moduleId, 10); // Enforce ID
+    generatedModule.id = parseInt(moduleId, 10);
 
-    console.log(`[ADMIN] AI generated Module ${generatedModule.id} preview ready: ${generatedModule.topic}`);
+    console.log(`[ADMIN] Gemini generated Module ${generatedModule.id}: ${generatedModule.topic}`);
     res.json({ success: true, module: generatedModule });
 
-  } catch (error) {
-    console.error('[ADMIN] AI Generation Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to generate module' });
+  } catch (err) {
+    console.error('[ADMIN] Generation error:', err.message);
+    res.status(500).json({ error: `Generation failed: ${err.message}` });
   }
 });
 
@@ -230,7 +260,6 @@ app.post('/bundle', (req, res) => {
     return res.status(400).json({ error: 'Request must be exactly 12 bytes' });
   }
 
-  // Verify XOR checksum
   let xor = 0;
   for (let i = 0; i < 11; i++) xor ^= bytes[i];
   if (xor !== bytes[11]) {
@@ -245,7 +274,6 @@ app.post('/bundle', (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const isGhostSync = bytes[1] === 0x01;
 
-  // Match tokens → modules
   const foundModules = [];
   for (const token of receivedTokens) {
     for (const moduleId of Object.keys(MODULE_STORE)) {
@@ -272,7 +300,7 @@ app.post('/bundle', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 2: GET /module/:id  (rich module download)
+// ENDPOINT 2: GET /module/:id
 // ══════════════════════════════════════════════════
 app.get('/module/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -289,7 +317,7 @@ app.get('/module/:id', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 3: GET /modules/manifest  (lightweight index)
+// ENDPOINT 3: GET /modules/manifest
 // ══════════════════════════════════════════════════
 app.get('/modules/manifest', (req, res) => {
   const manifest = Object.values(MODULE_STORE).map(m => ({
@@ -309,15 +337,16 @@ app.get('/', (req, res) => {
     status: 'running',
     message: 'BlindGuide — zero knowledge mode active',
     modulesLoaded: Object.keys(MODULE_STORE).length,
+    aiProvider: 'Google Gemini (free tier)',
     endpoints: [
-      'POST /bundle',
-      'GET  /module/:id',
-      'GET  /modules/manifest',
-      'POST /admin/login',
-      'POST /admin/module',
-      'PUT  /admin/module/:id',
+      'POST   /bundle',
+      'GET    /module/:id',
+      'GET    /modules/manifest',
+      'POST   /admin/login',
+      'POST   /admin/module',
+      'PUT    /admin/module/:id',
       'DELETE /admin/module/:id',
-      'POST /admin/generate-module',
+      'POST   /admin/generate-module',
     ],
   });
 });
@@ -331,6 +360,7 @@ app.listen(PORT, () => {
   console.log('  🔒 BlindGuide Server — Zero Knowledge');
   console.log(`  http://localhost:${PORT}`);
   console.log(`  Modules loaded: ${Object.keys(MODULE_STORE).length}`);
+  console.log('  AI Provider: Google Gemini (free)');
   console.log('  Endpoints:');
   console.log('    POST   /bundle               ← ZK 12-byte request');
   console.log('    GET    /module/:id            ← rich module download');
@@ -339,7 +369,7 @@ app.listen(PORT, () => {
   console.log('    POST   /admin/module          ← add module');
   console.log('    PUT    /admin/module/:id      ← update module');
   console.log('    DELETE /admin/module/:id      ← delete module');
-  console.log('    POST   /admin/generate-module ← AI module generator');
+  console.log('    POST   /admin/generate-module ← Gemini AI generator');
   console.log('  Waiting for requests...');
   console.log('════════════════════════════════════════');
 });
