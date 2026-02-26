@@ -3,8 +3,8 @@
 // ════════════════════════════════════════════════════
 
 // ── CONFIG ──
-const SERVER_URL = 'http://localhost:3000/bundle';
-const MODULE_SERVER_URL = 'http://localhost:3000/module';
+const SERVER_URL = 'https://blindguide-server.onrender.com/bundle';
+const MODULE_SERVER_URL = 'https://blindguide-server.onrender.com/module';
 const SECRET_KEY = 'BG_SECRET_2024';
 const LS_PREFIX = 'bg_module_';   // localStorage key prefix
 
