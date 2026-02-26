@@ -26,7 +26,7 @@ app.use(cors({
 }));
 
 // Handle preflight OPTIONS requests for all routes
-app.options('*', cors());
+app.options('/(.*)', cors());
 
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
