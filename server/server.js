@@ -18,9 +18,6 @@ const path = require('path');
 const cheerio = require('cheerio');
 const { Anthropic } = require('@anthropic-ai/sdk');
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
 // Use native fetch if available, fallback to node-fetch dynamically for ESM
 const fetchClient = typeof fetch !== 'undefined' ? fetch : (...args) => import('node-fetch').then(({ default: f }) => f(...args));
 
@@ -130,6 +127,14 @@ app.post('/admin/generate-module', requireAdmin, async (req, res) => {
   }
 
   let textToProcess = '';
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY environment variable is missing on this server.' });
+  }
+
+  const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
 
   try {
     if (method === 'url') {
