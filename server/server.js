@@ -1,9 +1,5 @@
 // ════════════════════════════════════════════════════
 // BLINDGUIDE — server.js  (Real Modules Edition)
-// Endpoints:
-//   POST /bundle         ← zero-knowledge 12-byte request
-//   GET  /module/:id     ← download a single rich module
-//   GET  /modules/manifest ← list of all modules (id + topic)
 // ════════════════════════════════════════════════════
 
 const express = require('express');
@@ -15,7 +11,8 @@ const path = require('path');
 const app = express();
 app.use(cors({
   origin: '*',
-  methods: ['POST', 'GET'],
+  methods: ['POST', 'GET', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Anon-User'],
 }));
 app.use(express.raw({ type: 'application/octet-stream' }));
 app.use(express.json());
@@ -36,7 +33,6 @@ function saveModules() {
 }
 
 // ── ADMIN AUTHENTICATION ───────────────────────────
-// EXPECTED SHA-256 HASH for admin password "admin123"
 const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9';
 let currentAdminToken = null;
 
@@ -99,7 +95,7 @@ function logRequest(type, details) {
 }
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 1: POST /bundle  (zero-knowledge path)
+// ENDPOINT 1: POST /bundle
 // ══════════════════════════════════════════════════
 app.post('/bundle', (req, res) => {
   const bytes = req.body;
@@ -109,7 +105,6 @@ app.post('/bundle', (req, res) => {
     return res.status(400).json({ error: 'Request must be exactly 12 bytes' });
   }
 
-  // Verify XOR checksum
   let xor = 0;
   for (let i = 0; i < 11; i++) xor ^= bytes[i];
   if (xor !== bytes[11]) {
@@ -124,12 +119,10 @@ app.post('/bundle', (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const isGhostSync = bytes[1] === 0x01;
 
-  // Match tokens → modules
   const foundModules = [];
   for (const token of receivedTokens) {
     for (const moduleId of Object.keys(MODULE_STORE)) {
       if (generateToken(moduleId, today) === token) {
-        // Return lightweight bundle summary (not the full rich content)
         const m = MODULE_STORE[moduleId];
         foundModules.push({ id: m.id, topic: m.topic });
         break;
@@ -152,7 +145,7 @@ app.post('/bundle', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 2: GET /module/:id  (rich module download)
+// ENDPOINT 2: GET /module/:id
 // ══════════════════════════════════════════════════
 app.get('/module/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
@@ -163,14 +156,13 @@ app.get('/module/:id', (req, res) => {
     return res.status(404).json({ error: `Module ${id} not found` });
   }
 
-  // Set cache headers — modules are static, cache for 24h in browser/SW
   res.set('Cache-Control', 'public, max-age=86400');
   logRequest('MODULE', `GET /module/${id} — ${module.topic}`);
   res.json(module);
 });
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 3: GET /modules/manifest  (lightweight index)
+// ENDPOINT 3: GET /modules/manifest
 // ══════════════════════════════════════════════════
 app.get('/modules/manifest', (req, res) => {
   const manifest = Object.values(MODULE_STORE).map(m => ({
@@ -183,7 +175,7 @@ app.get('/modules/manifest', (req, res) => {
 });
 
 // ══════════════════════════════════════════════════
-// ENDPOINT 4: GET /  (health check)
+// ENDPOINT 4: GET / (health check)
 // ══════════════════════════════════════════════════
 app.get('/', (req, res) => {
   res.json({
@@ -201,7 +193,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log('════════════════════════════════════════');
   console.log('  🔒 BlindGuide Server — Zero Knowledge');
-  console.log(`  http://localhost:${PORT}`);
+  console.log(`  https://blindguide-server.onrender.com`);
   console.log(`  Modules loaded: ${Object.keys(MODULE_STORE).length}`);
   console.log('  Endpoints:');
   console.log('    POST /bundle          ← ZK 12-byte request');
