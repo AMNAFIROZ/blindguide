@@ -141,9 +141,15 @@
 
         #errorMsg {
             color: #ef4444;
-            margin-top: 10px;
+            background: #450a0a22;
+            border: 1px solid #ef444444;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 14px;
             display: none;
-            font-size: 14px;
+            font-size: 13px;
+            font-family: monospace;
+            line-height: 1.4;
         }
 
         #successMsg {
@@ -166,9 +172,15 @@
                 <h2>Admin Authentication</h2>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="adminPassword" placeholder="Enter admin password">
+                    <input type="password" id="adminPassword" placeholder="Enter admin password"
+                        onkeyup="if(event.key==='Enter')login()">
                 </div>
-                <button class="btn" style="width:100%" onclick="login()">Login</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn" style="flex:2" onclick="login()">Login</button>
+                    <button class="btn btn-outline"
+                        style="flex:1; background:transparent; border:1px solid #00d4ff; color:#00d4ff;"
+                        onclick="testConnection()">Test</button>
+                </div>
                 <div id="errorMsg"></div>
             </div>
         </div>
@@ -241,10 +253,35 @@
             return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
+        function showError(msg) {
+            const err = document.getElementById('errorMsg');
+            err.innerHTML = `⚠️ ${msg}`;
+            err.style.display = 'block';
+        }
+
+        async function testConnection() {
+            showError('Testing connection to server...');
+            try {
+                const res = await fetch(`${SERVER_URL}/`);
+                const data = await res.json();
+                if (data.status === 'running') {
+                    showSuccess('Connection successful! Server is online.');
+                    document.getElementById('errorMsg').style.display = 'none';
+                } else {
+                    showError(`Server is up but returned unexpected status: ${JSON.stringify(data)}`);
+                }
+            } catch (e) {
+                showError(`Cannot reach server at ${SERVER_URL}.<br>Check if server is active and CORS is enabled.`);
+            }
+        }
+
         // Login
         async function login() {
             const pwd = document.getElementById('adminPassword').value;
-            if (!pwd) return;
+            if (!pwd) return showError('Please enter a password');
+
+            const err = document.getElementById('errorMsg');
+            err.style.display = 'none';
 
             // Hash password locally before sending
             const hash = await hashPassword(pwd);
@@ -256,18 +293,20 @@
                     body: JSON.stringify({ passwordHash: hash })
                 });
 
+                if (res.status === 404) {
+                    return showError('Auth endpoint not found (404). Is the backend up to date?');
+                }
+
                 const data = await res.json();
                 if (res.ok) {
                     adminToken = data.token;
                     showScreen('dashboardScreen');
                     loadModules();
                 } else {
-                    const err = document.getElementById('errorMsg');
-                    err.textContent = data.error || 'Login failed';
-                    err.style.display = 'block';
+                    showError(data.error || `Login failed (${res.status})`);
                 }
             } catch (e) {
-                alert('Server unreachable');
+                showError(`Network error: Could not reach backend.<br>URL: ${SERVER_URL}/admin/login`);
             }
         }
 

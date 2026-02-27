@@ -48,8 +48,10 @@ app.post('/admin/login', (req, res) => {
   const { passwordHash } = req.body;
   if (passwordHash === ADMIN_PASSWORD_HASH) {
     currentAdminToken = crypto.randomBytes(32).toString('hex');
+    logRequest('ADMIN', 'Login successful');
     res.json({ token: currentAdminToken });
   } else {
+    logRequest('ADMIN', 'Login FAILED — invalid password hash');
     res.status(401).json({ error: 'Invalid password' });
   }
 });
