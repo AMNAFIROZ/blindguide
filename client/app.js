@@ -362,14 +362,11 @@ async function processResults() {
     );
 
     const matchedId = bundle.modules.find(m => m.id === moduleId)?.id || bundle.modules[0]?.id || moduleId;
-    await addLog(
-      `<span class="prefix">[12]</span>Phone picks Module ${matchedId} — downloading full content...`,
-      6800
-    );
+    const richModules = await Promise.all(bundle.modules.map(m => downloadModule(m.id)));
+    const richModule = richModules.find(m => m.id === matchedId) || richModules[0];
 
-    const richModule = await downloadModule(matchedId);
     await addLog(
-      `<span class="prefix">    </span><span class="ok">✓ Zero private data sent. Server is blind to this student's profile.</span>`,
+      `<span class="prefix">    </span><span class="ok">✓ Batch fetch complete (3/3). Server is blind to this student's profile.</span>`,
       7300
     );
 
