@@ -504,9 +504,18 @@ async function triggerGhostSync(currentModuleId) {
       .join('').substring(0, 6).toUpperCase();
   }
 
-  const nextModules = predictions.slice(0, 2).map(p => p.moduleId);
-  const thirdModule = DECOY_MAP[nextModules[0]]?.[0] || 3;
-  const allModules = [...new Set([...nextModules, thirdModule])].slice(0, 3);
+  const nextModules = predictions.map(p => p.moduleId);
+
+  // Ensure we have exactly 3 unique modules to fetch
+  let allModules = [...new Set(nextModules)];
+  const possibleDecoys = [3, 5, 7, 9, 12, 15, 18, 21].filter(id => id !== currentModuleId && !allModules.includes(id));
+
+  while (allModules.length < 3 && possibleDecoys.length > 0) {
+    const randomIndex = Math.floor(Math.random() * possibleDecoys.length);
+    allModules.push(possibleDecoys.splice(randomIndex, 1)[0]);
+  }
+
+  allModules = allModules.slice(0, 3);
   const tokens = await Promise.all(allModules.map(id => hmacToken(id)));
 
   if (navigator.serviceWorker?.controller) {

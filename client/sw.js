@@ -141,13 +141,11 @@ self.addEventListener('message', async event => {
     const cache = await caches.open(MODULE_CACHE);
     for (const id of moduleIds) {
       try {
-        const modReq = new Request(`${SERVER}/module/${id}`);
-        // Skip if already in cache
+        const modReq = new Request(`${SERVER}/module/${id}`, { cache: 'reload' });
+        // Still log if skipping actual storage, but we want the fetch to happen for visibility
         const existing = await cache.match(modReq);
         if (existing) {
-          console.log(`[SW] Module ${id} already cached — skipping`);
-          moduleCached++;
-          continue;
+          console.log(`[SW] Module ${id} already in cache — re-fetching for sync visibility`);
         }
         const modRes = await fetch(modReq);
         if (modRes.ok) {
@@ -162,7 +160,7 @@ self.addEventListener('message', async event => {
   }
 
   const total = bundleCached + moduleCached;
-  console.log(`[SW] Ghost Sync done — ${total} items cached for "${label}"`);
+  console.log(`[SW] Ghost Sync done — ${moduleCached}/3 modules fetched for "${label}"`);
 
   // Notify all app clients
   const clients = await self.clients.matchAll();

@@ -136,8 +136,8 @@ app.post('/bundle', (req, res) => {
   }
 
   const prefix = isGhostSync ? '[GHOST SYNC] ' : '';
-  logRequest('BUNDLE', `${prefix}12 bytes → ${foundModules.length} modules matched`);
-  logRequest('BUNDLE', `Modules: ${foundModules.map(m => m.id).join(', ')} — server cannot identify which is real`);
+  logRequest('BUNDLE', `${prefix}12 bytes → matched ${foundModules.length}/3 modules`);
+  logRequest('BUNDLE', `Returning modules: ${foundModules.map(m => m.id).join(', ')}`);
   logRequest('BUNDLE', `Student identity: UNKNOWN | Score: UNKNOWN | Weakness: UNKNOWN`);
   console.log('─'.repeat(60));
 
