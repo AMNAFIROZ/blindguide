@@ -254,24 +254,37 @@
         }
 
         function showError(msg) {
+            console.error(`[ADMIN] Error: ${msg.replace('<br>', ' ')}`);
             const err = document.getElementById('errorMsg');
             err.innerHTML = `⚠️ ${msg}`;
             err.style.display = 'block';
         }
 
         async function testConnection() {
+            console.log(`[ADMIN] Testing connection to ${SERVER_URL}...`);
             showError('Testing connection to server...');
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+
             try {
-                const res = await fetch(`${SERVER_URL}/`);
+                const res = await fetch(`${SERVER_URL}/`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
+                console.log('[ADMIN] Server response:', data);
                 if (data.status === 'running') {
                     showSuccess('Connection successful! Server is online.');
                     document.getElementById('errorMsg').style.display = 'none';
                 } else {
-                    showError(`Server is up but returned unexpected status: ${JSON.stringify(data)}`);
+                    showError(`Server responded but status is "${data.status}".`);
                 }
             } catch (e) {
-                showError(`Cannot reach server at ${SERVER_URL}.<br>Check if server is active and CORS is enabled.`);
+                console.error('[ADMIN] Fetch error:', e);
+                if (e.name === 'AbortError') {
+                    showError('Connection timed out after 10 seconds. Render might be slow.');
+                } else {
+                    showError(`Cannot reach server. Browser blocked the request or server is down.<br>Check console (F12) for CORS/Network errors.`);
+                }
             }
         }
 
