@@ -5,7 +5,7 @@
 
 const CACHE_NAME = 'blindguide-v2';
 const MODULE_CACHE = 'blindguide-modules-v2';
-const SERVER = 'https://blindguide-client.onrender.com';
+const SERVER = 'https://blindguide-server.onrender.com';
 
 const APP_SHELL = ['/index.html', '/app.js', '/manifest.json'];
 
