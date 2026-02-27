@@ -2,260 +2,136 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
     <title>BlindGuide Admin Dashboard</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         body {
-            background: #0a0a0a;
+            background: #0a0e1a;
             color: #e2e8f0;
-            font-family: 'Courier New', monospace;
             min-height: 100vh;
-        }
-
-        header {
-            background: #111;
-            border-bottom: 1px solid #1e3a2e;
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        header h1 {
-            font-size: 18px;
-            color: #00d4ff;
-            letter-spacing: 2px;
-        }
-
-        header span {
-            font-size: 12px;
-            color: #64748b;
+            padding: 24px;
         }
 
         .container {
-            max-width: 960px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 32px 16px;
         }
 
-        /* ── LOGIN ── */
-        #loginSection {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 60vh;
-            gap: 16px;
-        }
-
-        #loginSection h2 {
+        h1 {
             color: #00d4ff;
-            font-size: 22px;
-            margin-bottom: 8px;
+            margin-bottom: 20px;
+            font-weight: 800;
         }
 
-        #loginSection input {
-            background: #1a1a1a;
-            border: 1px solid #2d4a3e;
-            color: #e2e8f0;
-            padding: 12px 18px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 14px;
-            width: 300px;
-        }
-
-        /* ── BUTTONS ── */
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 13px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn:hover {
-            opacity: 0.85;
-        }
-
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .btn-cyan {
-            background: #06b6d4;
-            color: #000;
-            font-weight: bold;
-        }
-
-        .btn-green {
-            background: #10b981;
-            color: #000;
-            font-weight: bold;
-        }
-
-        .btn-red {
-            background: #ef4444;
-            color: #fff;
-            font-weight: bold;
-        }
-
-        .btn-gray {
-            background: #334155;
-            color: #e2e8f0;
-        }
-
-        .btn-purple {
-            background: #8b5cf6;
-            color: #fff;
-            font-weight: bold;
-        }
-
-        .btn-yellow {
-            background: #f59e0b;
-            color: #000;
-            font-weight: bold;
-        }
-
-        /* ── SECTIONS ── */
-        #dashSection {
+        .screen {
             display: none;
         }
 
-        .section-card {
-            background: #111;
-            border: 1px solid #1e3a2e;
-            border-radius: 10px;
-            padding: 24px;
-            margin-bottom: 28px;
-        }
-
-        .section-title {
-            font-size: 13px;
-            color: #00d4ff;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 18px;
-            border-bottom: 1px solid #1e3a2e;
-            padding-bottom: 10px;
-        }
-
-        /* ── TABS ── */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            padding: 8px 16px;
-            background: #1a1a1a;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            background: #06b6d4;
-            color: #000;
-            border-color: #06b6d4;
-            font-weight: bold;
-        }
-
-        .tab-panel {
-            display: none;
-        }
-
-        .tab-panel.active {
+        .screen.active {
             display: block;
         }
 
-        /* ── FORM FIELDS ── */
+        .card {
+            background: #111827;
+            border: 1px solid #1e2d45;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #1e2d45;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
         label {
             display: block;
-            font-size: 11px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 13px;
+            color: #94a3b8;
             margin-bottom: 6px;
-            margin-top: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
-        input[type="text"],
-        input[type="number"],
-        input[type="url"],
+        input,
         textarea {
             width: 100%;
-            background: #1a1a1a;
-            border: 1px solid #2d4a3e;
+            background: #0a0e1a;
+            border: 1px solid #1e2d45;
             color: #e2e8f0;
-            padding: 10px 14px;
-            border-radius: 6px;
+            padding: 10px;
+            border-radius: 4px;
             font-family: monospace;
-            font-size: 13px;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 100px;
             resize: vertical;
         }
 
         input:focus,
         textarea:focus {
             outline: none;
-            border-color: #06b6d4;
+            border-color: #00d4ff;
         }
 
-        .row {
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-            flex-wrap: wrap;
+        .btn {
+            background: #00d4ff;
+            color: #0a0e1a;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
         }
 
-        .row .field {
-            flex: 1;
-            min-width: 120px;
+        .btn:hover {
+            background: #00b3d6;
         }
 
-        /* ── MODULE LIST ── */
-        .module-item {
-            background: #0f1a14;
-            border: 1px solid #1e3a2e;
-            border-radius: 8px;
-            padding: 14px 18px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 10px;
+        .btn-danger {
+            background: #ef4444;
+            color: white;
         }
 
-        .module-item-info {
-            flex: 1;
+        .btn-danger:hover {
+            background: #dc2626;
         }
 
-        .module-id {
-            color: #00d4ff;
+        .btn-sm {
+            padding: 6px 12px;
             font-size: 12px;
         }
 
-        .module-topic {
-            color: #e2e8f0;
+        .module-item {
+            background: #0a0e1a;
+            padding: 16px;
+            border-radius: 4px;
+            border-left: 3px solid #00d4ff;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-info {
+            font-family: monospace;
             font-size: 14px;
-            margin-top: 2px;
         }
 
         .module-actions {
@@ -263,556 +139,253 @@
             gap: 8px;
         }
 
-        /* ── PREVIEW BOX ── */
-        .preview-box {
-            background: #0a0f0c;
-            border: 1px solid #2d4a3e;
-            border-radius: 6px;
-            padding: 14px;
-            font-size: 12px;
-            color: #6ee7b7;
-            white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 14px;
+        #errorMsg {
+            color: #ef4444;
+            margin-top: 10px;
             display: none;
+            font-size: 14px;
         }
 
-        /* ── STATUS / TOAST ── */
-        #toast {
-            position: fixed;
-            bottom: 28px;
-            right: 28px;
-            padding: 12px 22px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 13px;
-            z-index: 9999;
+        #successMsg {
+            color: #10b981;
+            margin-bottom: 16px;
             display: none;
-            max-width: 360px;
-        }
-
-        #toast.success {
-            background: #064e3b;
-            border: 1px solid #10b981;
-            color: #6ee7b7;
-        }
-
-        #toast.error {
-            background: #450a0a;
-            border: 1px solid #ef4444;
-            color: #fca5a5;
-        }
-
-        #toast.info {
-            background: #0c2a4a;
-            border: 1px solid #3b82f6;
-            color: #93c5fd;
-        }
-
-        /* ── SPINNER ── */
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #334155;
-            border-top-color: #06b6d4;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ── EDIT MODAL ── */
-        #editModal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            overflow-y: auto;
-            padding: 32px 16px;
-        }
-
-        #editModal .modal-box {
-            background: #111;
-            border: 1px solid #1e3a2e;
-            border-radius: 12px;
-            padding: 28px;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        #editModal h3 {
-            color: #00d4ff;
-            margin-bottom: 18px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 18px;
-            flex-wrap: wrap;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #475569;
-            padding: 32px;
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
+    <div class="container">
+        <h1><span style="color:#94a3b8">BlindGuide / </span>Admin Dashboard</h1>
 
-    <header>
-        <h1>🔒 BLINDGUIDE ADMIN</h1>
-        <span id="adminStatus">Not logged in</span>
-    </header>
-
-    <!-- LOGIN -->
-    <div class="container" id="loginSection">
-        <h2>Admin Login</h2>
-        <input type="password" id="passwordInput" placeholder="Enter admin password" />
-        <button class="btn btn-cyan" onclick="doLogin()">Login</button>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div class="container" id="dashSection">
-
-        <!-- ══ AI MODULE GENERATOR ══ -->
-        <div class="section-card">
-            <div class="section-title">⚡ AI Module Generator (Gemini)</div>
-
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('topic')">✏ From Topic</button>
-                <button class="tab-btn" onclick="switchTab('text')">📄 From Text</button>
-                <button class="tab-btn" onclick="switchTab('url')">🔗 From URL</button>
-            </div>
-
-            <!-- Tab: Topic -->
-            <div class="tab-panel active" id="tab-topic">
-                <label>Topic Name</label>
-                <input type="text" id="gen-topic"
-                    placeholder="e.g. Fractions for Grade 5, Algebra basics, Geometry angles" />
-            </div>
-
-            <!-- Tab: Text -->
-            <div class="tab-panel" id="tab-text">
-                <label>Paste Raw Text (from textbook, notes, PDF)</label>
-                <textarea id="gen-text" rows="6"
-                    placeholder="Paste any educational text here — Gemini will structure it into a module..."></textarea>
-            </div>
-
-            <!-- Tab: URL -->
-            <div class="tab-panel" id="tab-url">
-                <label>Webpage URL</label>
-                <input type="url" id="gen-url" placeholder="https://en.wikipedia.org/wiki/Fraction" />
-            </div>
-
-            <div class="row" style="margin-top:14px;">
-                <div class="field">
-                    <label>Module ID (number)</label>
-                    <input type="number" id="gen-id" placeholder="e.g. 25" min="1" />
+        <!-- LOGIN SCREEN -->
+        <div id="loginScreen" class="screen active">
+            <div class="card" style="max-width: 400px; margin: 60px auto;">
+                <h2>Admin Authentication</h2>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPassword" placeholder="Enter admin password">
                 </div>
-                <button class="btn btn-purple" id="genBtn" onclick="generateModule()"
-                    style="margin-bottom:0; height:42px;">
-                    Generate with Gemini
-                </button>
-            </div>
-
-            <div class="preview-box" id="genPreview"></div>
-
-            <div id="genSaveRow" style="display:none; margin-top:14px; display:none;">
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-green" onclick="saveGeneratedModule()">✓ Save Module</button>
-                    <button class="btn btn-gray" onclick="editGeneratedModule()">✏ Edit Before Saving</button>
-                    <button class="btn btn-red" onclick="discardGenerated()">✗ Discard</button>
-                </div>
+                <button class="btn" style="width:100%" onclick="login()">Login</button>
+                <div id="errorMsg"></div>
             </div>
         </div>
 
-        <!-- ══ ADD MODULE MANUALLY ══ -->
-        <div class="section-card">
-            <div class="section-title">➕ Add Module Manually</div>
+        <!-- DASHBOARD SCREEN -->
+        <div id="dashboardScreen" class="screen">
+            <div id="successMsg">Action completed successfully.</div>
 
-            <div class="row">
-                <div class="field">
-                    <label>Module ID</label>
-                    <input type="number" id="add-id" placeholder="e.g. 30" min="1" />
+            <!-- Module list -->
+            <div class="card">
+                <h2>Existing Modules</h2>
+                <div id="moduleList">Loading modules...</div>
+            </div>
+
+            <div class="card" id="formCard">
+                <h2 id="formTitle">Add New Module</h2>
+                <p style="color:#94a3b8; font-size:12px; margin-bottom:16px;">Note: Examples and Practice questions are
+                    stored as JSON arrays.</p>
+                <div class="form-group">
+                    <label>Module ID (Number)</label>
+                    <input type="number" id="modId" placeholder="e.g. 25">
                 </div>
-                <div class="field" style="flex:3;">
-                    <label>Topic Name</label>
-                    <input type="text" id="add-topic" placeholder="e.g. Algebra — Linear Equations" />
+                <div class="form-group">
+                    <label>Topic Title</label>
+                    <input type="text" id="modTopic" placeholder="e.g. Fractions Part 2">
                 </div>
-            </div>
-
-            <label>Concept Text</label>
-            <textarea id="add-concept" rows="4"
-                placeholder="Explain the concept clearly in 3–5 sentences..."></textarea>
-
-            <label>Examples (JSON Array)</label>
-            <textarea id="add-examples" rows="5"
-                placeholder='[{"problem":"What is 1/2 + 1/4?","solution":"Find common denominator: 2/4 + 1/4 = 3/4"}]'></textarea>
-
-            <label>Practice Questions (JSON Array)</label>
-            <textarea id="add-practice" rows="5"
-                placeholder='[{"question":"Simplify 4/8","answer":"1/2","hint":"Find GCF of 4 and 8"}]'></textarea>
-
-            <div style="margin-top:16px;">
-                <button class="btn btn-green" onclick="addModule()">Add Module</button>
-            </div>
-        </div>
-
-        <!-- ══ ALL MODULES ══ -->
-        <div class="section-card">
-            <div class="section-title">📦 All Modules</div>
-            <div id="moduleList">
-                <div class="empty-state">No modules loaded yet.</div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- EDIT MODAL -->
-    <div id="editModal">
-        <div class="modal-box">
-            <h3>✏ Edit Module</h3>
-
-            <label>Module ID</label>
-            <input type="number" id="edit-id" disabled />
-
-            <label>Topic</label>
-            <input type="text" id="edit-topic" />
-
-            <label>Concept</label>
-            <textarea id="edit-concept" rows="4"></textarea>
-
-            <label>Examples (JSON Array)</label>
-            <textarea id="edit-examples" rows="5"></textarea>
-
-            <label>Practice (JSON Array)</label>
-            <textarea id="edit-practice" rows="5"></textarea>
-
-            <div class="modal-actions">
-                <button class="btn btn-cyan" onclick="saveEdit()">Save Changes</button>
-                <button class="btn btn-gray" onclick="closeEdit()">Cancel</button>
+                <div class="form-group">
+                    <label>Concept Text</label>
+                    <textarea id="modConcept" placeholder="Write lesson concept explanation..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Examples (JSON Array)</label>
+                    <textarea id="modExamples" placeholder='[{"problem":"1+1=?","solution":"2"}]'></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Practice Questions (JSON Array)</label>
+                    <textarea id="modPractice"
+                        placeholder='[{"question":"2+2=?","answer":"4","hint":"Double it"}]'></textarea>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn" id="saveBtn" onclick="saveModule()">Save Module</button>
+                    <button class="btn btn-danger" style="display:none;" id="cancelBtn" onclick="resetForm()">Cancel
+                        Edit</button>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- TOAST -->
-    <div id="toast"></div>
 
     <script>
-        const SERVER = 'https://blindguide-server.onrender.com';
-        let adminToken = null;
-        let generatedModule = null;
-        let activeTab = 'topic';
+        const SERVER_URL = 'https://blindguide-server.onrender.com';
+        let adminToken = '';
 
-        // ── TOAST ──
-        function showToast(msg, type = 'success') {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = type;
-            t.style.display = 'block';
-            clearTimeout(t._timer);
-            t._timer = setTimeout(() => t.style.display = 'none', 4000);
+        // Switch screens
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
         }
 
-        // ── LOGIN ──
-        async function doLogin() {
-            const pw = document.getElementById('passwordInput').value;
-            if (!pw) return showToast('Enter password', 'error');
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
 
-            const hash = await sha256(pw);
+        // SHA256 Helper
+        async function hashPassword(pwd) {
+            const data = new TextEncoder().encode(pwd);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Login
+        async function login() {
+            const pwd = document.getElementById('adminPassword').value;
+            if (!pwd) return;
+
+            // Hash password locally before sending
+            const hash = await hashPassword(pwd);
+
             try {
-                const res = await fetch(`${SERVER}/admin/login`, {
+                const res = await fetch(`${SERVER_URL}/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ passwordHash: hash }),
+                    body: JSON.stringify({ passwordHash: hash })
                 });
+
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Login failed');
-                adminToken = data.token;
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('dashSection').style.display = 'block';
-                document.getElementById('adminStatus').textContent = '✓ Logged in';
-                showToast('Logged in successfully');
-                loadModules();
-            } catch (err) {
-                showToast('Login failed: ' + err.message, 'error');
+                if (res.ok) {
+                    adminToken = data.token;
+                    showScreen('dashboardScreen');
+                    loadModules();
+                } else {
+                    const err = document.getElementById('errorMsg');
+                    err.textContent = data.error || 'Login failed';
+                    err.style.display = 'block';
+                }
+            } catch (e) {
+                alert('Server unreachable');
             }
         }
 
-        async function sha256(str) {
-            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        // Allow Enter key on password field
-        document.addEventListener('DOMContentLoaded', () => {
-            const pw = document.getElementById('passwordInput');
-            if (pw) pw.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-        });
-
-        // ── TABS ──
-        function switchTab(tab) {
-            activeTab = tab;
-            document.querySelectorAll('.tab-btn').forEach((b, i) => {
-                b.classList.toggle('active', ['topic', 'text', 'url'][i] === tab);
-            });
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-        }
-
-        // ── LOAD MODULES ──
+        // Load Modules
         async function loadModules() {
-            try {
-                const res = await fetch(`${SERVER}/modules/manifest`);
-                const manifest = await res.json();
-                renderModuleList(manifest);
-            } catch (err) {
-                document.getElementById('moduleList').innerHTML =
-                    `<div class="empty-state">Could not load modules: ${err.message}</div>`;
-            }
-        }
+            const res = await fetch(`${SERVER_URL}/modules/manifest`);
+            const modules = await res.json();
 
-        function renderModuleList(manifest) {
             const list = document.getElementById('moduleList');
-            if (!manifest.length) {
-                list.innerHTML = '<div class="empty-state">No modules yet. Add one above.</div>';
+            if (modules.length === 0) {
+                list.innerHTML = '<p style="color:#94a3b8">No modules found.</p>';
                 return;
             }
-            list.innerHTML = manifest
-                .sort((a, b) => a.id - b.id)
-                .map(m => `
+
+            list.innerHTML = modules.map(m => `
         <div class="module-item">
-          <div class="module-item-info">
-            <div class="module-id">MODULE ${m.id}</div>
-            <div class="module-topic">${m.topic}</div>
+          <div class="module-info">
+            <span style="color:#00d4ff">ID: ${m.id}</span> — <strong>${m.topic}</strong>
           </div>
           <div class="module-actions">
-            <button class="btn btn-yellow" onclick="openEdit(${m.id})">Edit</button>
-            <button class="btn btn-red" onclick="deleteModule(${m.id}, '${m.topic.replace(/'/g, "\\'")}')">Delete</button>
+            <button class="btn btn-sm" onclick="editModule(${m.id})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteModule(${m.id})">Delete</button>
           </div>
-        </div>`).join('');
+        </div>
+      `).join('');
         }
 
-        // ── AI GENERATE ──
-        async function generateModule() {
-            const moduleId = document.getElementById('gen-id').value;
-            if (!moduleId) return showToast('Enter a Module ID first', 'error');
+        // Delete
+        async function deleteModule(id) {
+            if (!confirm(`Delete module ${id}?`)) return;
 
-            let content = '';
-            let url = '';
+            const res = await fetch(`${SERVER_URL}/admin/module/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': adminToken }
+            });
 
-            if (activeTab === 'topic') {
-                content = document.getElementById('gen-topic').value.trim();
-                if (!content) return showToast('Enter a topic name', 'error');
-            } else if (activeTab === 'text') {
-                content = document.getElementById('gen-text').value.trim();
-                if (!content) return showToast('Paste some text first', 'error');
-            } else if (activeTab === 'url') {
-                url = document.getElementById('gen-url').value.trim();
-                if (!url) return showToast('Enter a URL', 'error');
-            }
-
-            const btn = document.getElementById('genBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner"></span>Generating...';
-            document.getElementById('genPreview').style.display = 'none';
-            document.getElementById('genSaveRow').style.display = 'none';
-            showToast('Asking Gemini to generate module...', 'info');
-
-            try {
-                const body = { moduleId: parseInt(moduleId), inputType: activeTab, content, url };
-                const res = await fetch(`${SERVER}/admin/generate-module`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
-                    body: JSON.stringify(body),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Generation failed');
-
-                generatedModule = data.module;
-                const preview = document.getElementById('genPreview');
-                preview.style.display = 'block';
-                preview.textContent = JSON.stringify(generatedModule, null, 2);
-                document.getElementById('genSaveRow').style.display = 'block';
-                showToast('✓ Module generated! Review and save.', 'success');
-
-            } catch (err) {
-                showToast('Generation failed: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Generate with Gemini';
-            }
-        }
-
-        async function saveGeneratedModule() {
-            if (!generatedModule) return;
-            try {
-                const res = await fetch(`${SERVER}/admin/module`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
-                    body: JSON.stringify({ module: generatedModule }),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Save failed');
-                showToast(`✓ Module ${generatedModule.id} saved!`);
-                discardGenerated();
+            if (res.ok) {
+                showSuccess(`Module ${id} deleted.`);
                 loadModules();
-            } catch (err) {
-                showToast('Save failed: ' + err.message, 'error');
+            } else {
+                alert('Delete failed. Ensure server is running or token is valid.');
             }
         }
 
-        function editGeneratedModule() {
-            if (!generatedModule) return;
-            openEditWithData(generatedModule, true);
+        // Edit (Fetch details and load to form)
+        async function editModule(id) {
+            const res = await fetch(`${SERVER_URL}/module/${id}`);
+            if (res.ok) {
+                const m = await res.json();
+                document.getElementById('formTitle').textContent = `Edit Module ${m.id}`;
+                document.getElementById('modId').value = m.id;
+                document.getElementById('modId').disabled = true; // prevent changing ID
+                document.getElementById('modTopic').value = m.topic;
+                document.getElementById('modConcept').value = m.concept;
+                document.getElementById('modExamples').value = JSON.stringify(m.examples, null, 2);
+                document.getElementById('modPractice').value = JSON.stringify(m.practice, null, 2);
+                document.getElementById('cancelBtn').style.display = 'block';
+
+                window.scrollTo({ top: document.getElementById('formCard').offsetTop, behavior: 'smooth' });
+            }
         }
 
-        function discardGenerated() {
-            generatedModule = null;
-            document.getElementById('genPreview').style.display = 'none';
-            document.getElementById('genSaveRow').style.display = 'none';
-            document.getElementById('gen-topic').value = '';
-            document.getElementById('gen-text').value = '';
-            document.getElementById('gen-url').value = '';
-            document.getElementById('gen-id').value = '';
+        function resetForm() {
+            document.getElementById('formTitle').textContent = 'Add New Module';
+            document.getElementById('modId').value = '';
+            document.getElementById('modId').disabled = false;
+            document.getElementById('modTopic').value = '';
+            document.getElementById('modConcept').value = '';
+            document.getElementById('modExamples').value = '';
+            document.getElementById('modPractice').value = '';
+            document.getElementById('cancelBtn').style.display = 'none';
         }
 
-        // ── ADD MODULE MANUALLY ──
-        async function addModule() {
-            const id = parseInt(document.getElementById('add-id').value);
-            const topic = document.getElementById('add-topic').value.trim();
-            const concept = document.getElementById('add-concept').value.trim();
-            const examplesRaw = document.getElementById('add-examples').value.trim();
-            const practiceRaw = document.getElementById('add-practice').value.trim();
-
-            if (!id || !topic || !concept) return showToast('ID, topic and concept are required', 'error');
+        // Save (Add or Update)
+        async function saveModule() {
+            const id = parseInt(document.getElementById('modId').value);
+            if (isNaN(id)) return alert('Invalid ID');
 
             let examples, practice;
-            try { examples = JSON.parse(examplesRaw || '[]'); } catch { return showToast('Examples field has invalid JSON', 'error'); }
-            try { practice = JSON.parse(practiceRaw || '[]'); } catch { return showToast('Practice field has invalid JSON', 'error'); }
-
-            const module = { id, topic, concept, examples, practice };
-
             try {
-                const res = await fetch(`${SERVER}/admin/module`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
-                    body: JSON.stringify({ module }),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Add failed');
-                showToast(`✓ Module ${id} added!`);
-                document.getElementById('add-id').value = '';
-                document.getElementById('add-topic').value = '';
-                document.getElementById('add-concept').value = '';
-                document.getElementById('add-examples').value = '';
-                document.getElementById('add-practice').value = '';
+                examples = JSON.parse(document.getElementById('modExamples').value || '[]');
+                practice = JSON.parse(document.getElementById('modPractice').value || '[]');
+            } catch (e) {
+                return alert('Examples and Practice must be valid JSON matching the format.');
+            }
+
+            const module = {
+                id,
+                topic: document.getElementById('modTopic').value,
+                concept: document.getElementById('modConcept').value,
+                examples,
+                practice
+            };
+
+            const isUpdate = document.getElementById('modId').disabled;
+            const method = isUpdate ? 'PUT' : 'POST';
+            const url = isUpdate ? `${SERVER_URL}/admin/module/${id}` : `${SERVER_URL}/admin/module`;
+
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': adminToken
+                },
+                body: JSON.stringify({ module })
+            });
+
+            if (res.ok) {
+                showSuccess(isUpdate ? `Module ${id} updated.` : `Module ${id} added.`);
+                resetForm();
                 loadModules();
-            } catch (err) {
-                showToast('Add failed: ' + err.message, 'error');
+            } else {
+                alert('Save failed.');
             }
         }
 
-        // ── EDIT MODULE ──
-        let editingId = null;
-        let editingIsGenerated = false;
-
-        async function openEdit(id) {
-            editingIsGenerated = false;
-            try {
-                const res = await fetch(`${SERVER}/module/${id}`);
-                const module = await res.json();
-                if (!res.ok) throw new Error(module.error || 'Load failed');
-                openEditWithData(module, false);
-            } catch (err) {
-                showToast('Could not load module: ' + err.message, 'error');
-            }
-        }
-
-        function openEditWithData(module, isGenerated) {
-            editingId = module.id;
-            editingIsGenerated = isGenerated;
-            document.getElementById('edit-id').value = module.id;
-            document.getElementById('edit-topic').value = module.topic || '';
-            document.getElementById('edit-concept').value = module.concept || '';
-            document.getElementById('edit-examples').value = JSON.stringify(module.examples || [], null, 2);
-            document.getElementById('edit-practice').value = JSON.stringify(module.practice || [], null, 2);
-            document.getElementById('editModal').style.display = 'block';
-        }
-
-        function closeEdit() {
-            document.getElementById('editModal').style.display = 'none';
-            editingId = null;
-            editingIsGenerated = false;
-        }
-
-        async function saveEdit() {
-            const topic = document.getElementById('edit-topic').value.trim();
-            const concept = document.getElementById('edit-concept').value.trim();
-            const examplesRaw = document.getElementById('edit-examples').value.trim();
-            const practiceRaw = document.getElementById('edit-practice').value.trim();
-
-            let examples, practice;
-            try { examples = JSON.parse(examplesRaw || '[]'); } catch { return showToast('Examples has invalid JSON', 'error'); }
-            try { practice = JSON.parse(practiceRaw || '[]'); } catch { return showToast('Practice has invalid JSON', 'error'); }
-
-            const module = { id: editingId, topic, concept, examples, practice };
-
-            if (editingIsGenerated) {
-                // Editing a generated module before saving — update generatedModule and close
-                generatedModule = module;
-                const preview = document.getElementById('genPreview');
-                preview.textContent = JSON.stringify(generatedModule, null, 2);
-                closeEdit();
-                showToast('Preview updated. Click Save Module to save.');
-                return;
-            }
-
-            try {
-                const res = await fetch(`${SERVER}/admin/module/${editingId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': adminToken },
-                    body: JSON.stringify({ module }),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Update failed');
-                showToast(`✓ Module ${editingId} updated!`);
-                closeEdit();
-                loadModules();
-            } catch (err) {
-                showToast('Update failed: ' + err.message, 'error');
-            }
-        }
-
-        // ── DELETE MODULE ──
-        async function deleteModule(id, topic) {
-            if (!confirm(`Delete Module ${id}: "${topic}"?\n\nThis cannot be undone.`)) return;
-            try {
-                const res = await fetch(`${SERVER}/admin/module/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': adminToken },
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Delete failed');
-                showToast(`✓ Module ${id} deleted`);
-                loadModules();
-            } catch (err) {
-                showToast('Delete failed: ' + err.message, 'error');
-            }
-        }
+        // Reset form initially
+        resetForm();
     </script>
 </body>
 
